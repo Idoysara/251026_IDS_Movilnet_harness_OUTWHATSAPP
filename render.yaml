@@ -1,0 +1,32 @@
+# ==============================================================================
+# Render.com Blueprint — Sistema Soberano OUTWHATSAPP & Hub PWA Movilnet
+# Repositorio: https://github.com/Idoysara/251026_IDS_Movilnet_harness_OUTWHATSAPP
+# Gobernanza: Universal Best Practices Engineering Rule (Pilares I al VII)
+# ==============================================================================
+services:
+  # 1. Microservicio Soberano OUTWHATSAPP (Fachada N8N v3 + SMS SMPP + Web Push + Divisor TTS)
+  - type: web
+    name: movilnet-outwhatsapp-sovereign
+    runtime: python
+    rootDir: 231026_IDS_Movilnet/MODULO_OUTWHATSAPP
+    buildCommand: pip install -r requirements.txt
+    startCommand: python3 outwhatsapp/infrastructure/server.py
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: N8N_BASE_URL
+        value: https://n8n.lpgtec.net
+      - key: N8N_WEBHOOK_TEST_URL
+        value: https://n8n.lpgtec.net/webhook-test/c8fff181-13b7-4514-9d4b-4612b5cd93e8
+      - key: N8N_WEBHOOK_PROD_URL
+        value: https://n8n.lpgtec.net/webhook/c8fff181-13b7-4514-9d4b-4612b5cd93e8
+      - key: N8N_WORKFLOW_ID
+        value: eqxjnKshsIeO1vgR
+      - key: MOVILNET_PUBLIC_PWA_URL
+        value: https://one21026-ids-movilnet-pwa-bxmz.onrender.com
