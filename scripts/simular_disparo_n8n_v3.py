@@ -85,25 +85,54 @@ def disparar_webhook(url: str, payload: dict, timeout: int = 15) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Disparador Soberano N8N v3 (Sin WhatsApp)")
-    parser.add_argument("--msisdn", default="04161234567", help="Número de teléfono Movilnet")
-    parser.add_argument("--mensaje", default="Consultar saldo y promociones", help="Mensaje del abonado")
+    parser = argparse.ArgumentParser(description="Disparador Soberano Multi-Operadora N8N v3 (Sin WhatsApp)")
+    parser.add_argument("--msisdn", default="04161234567", help="Número de teléfono (0416, 0426, 0414, 0424, 0412, 0212 o Intl)")
+    parser.add_argument("--mensaje", default="Consultar saldo y promociones", help="Mensaje del usuario")
     parser.add_argument("--prod", action="store_true", help="Usar webhook de producción en vez del webhook-test")
     parser.add_argument("--url", default=None, help="Sobrescribir URL del webhook de N8N")
-    parser.add_argument("--server-url", default="http://127.0.0.1:8035", help="URL del microservicio OUTWHATSAPP")
+    parser.add_argument(
+        "--server-url",
+        default="https://two51026-ids-movilnet-harness-outwhatsapp.onrender.com",
+        help="URL del servidor OUTWHATSAPP receptor (por defecto: Render Cloud)"
+    )
+    parser.add_argument("--multi-carrier", action="store_true", help="Ejecutar batería de pruebas desde las 5 operadoras")
     parser.add_argument("--test", action="store_true", help="Auto-verificación matemática del payload")
 
     args = parser.parse_args()
 
     if args.test:
-        print("🔍 Verificando construcción del payload soberano...")
-        p = construir_payload_soberano("0416-999.88.77", "Test de saldo")
-        assert p["server_url"] == "http://127.0.0.1:8035"
-        assert p["data"]["key"]["remoteJid"] == "584169998877@s.whatsapp.net"
-        print("✅ Auto-test superado: Payload generado cumple con el Patrón Fachada.")
+        print("🔍 Verificando construcción del payload soberano multi-operadora...")
+        p1 = construir_payload_soberano("0416-999.88.77", "Test de saldo", server_url="http://127.0.0.1:8035")
+        assert p1["server_url"] == "http://127.0.0.1:8035"
+        assert p1["data"]["key"]["remoteJid"] == "584169998877@s.whatsapp.net"
+        p2 = construir_payload_soberano("0412-300.11.55", "Portabilidad Digitel")
+        assert p2["data"]["key"]["remoteJid"] == "584123001155@s.whatsapp.net"
+        p3 = construir_payload_soberano("0414-255.45.90", "Portabilidad Movistar")
+        assert p3["data"]["key"]["remoteJid"] == "584142554590@s.whatsapp.net"
+        print("✅ Auto-test superado: Payload generado cumple con el Patrón Fachada para todas las operadoras.")
         sys.exit(0)
 
     url_target = args.url or (PROD_WEBHOOK_URL if args.prod else TEST_WEBHOOK_URL)
+
+    if args.multi_carrier:
+        casos = [
+            ("MOVILNET (0416)", "04161234567", "Hola, deseo consultar mi saldo disponible"),
+            ("DIGITEL (0412)", "04123001155", "Hola, llamo desde Digitel 0412 y quiero Portabilidad a Movilnet"),
+            ("MOVISTAR (0414)", "04142554590", "Hola, soy Movistar 0414, quiero ver planes y Portabilidad eSIM"),
+            ("MOVISTAR (0424)", "04241389058", "Quiero hacer una recarga C2P a un familiar Movilnet"),
+            ("CANTV FIJO (0212)", "02125551234", "Buenas tardes, consulta de planes desde teléfono fijo CANTV"),
+        ]
+        print("=" * 70)
+        print("🌐 BATERÍA MULTI-OPERADORA HACIA N8N v3 + RENDER CLOUD")
+        print(f"Webhook N8N: {url_target}")
+        print(f"Callback Render: {args.server_url}")
+        print("=" * 70)
+        for label, num, msg in casos:
+            payload = construir_payload_soberano(msisdn=num, mensaje=msg, server_url=args.server_url)
+            res = disparar_webhook(url_target, payload)
+            print(f"[{label}] Número: {num} -> HTTP {res.get('status_code')} | OK={res.get('success')}")
+        sys.exit(0)
+
     payload = construir_payload_soberano(
         msisdn=args.msisdn,
         mensaje=args.mensaje,
@@ -113,9 +142,9 @@ def main():
     print("=" * 70)
     print("🚀 DISPARANDO WEBHOOK N8N v3 (SIN WHATSAPP)")
     print(f"Destino:    {url_target}")
-    print(f"Abonado:    {args.msisdn}")
+    print(f"Usuario:    {args.msisdn}")
     print(f"Mensaje:    {args.mensaje}")
-    print(f"server_url: {args.server_url} (Respuesta irá a OUTWHATSAPP :8035)")
+    print(f"server_url: {args.server_url} (Respuesta irá a Render / OUTWHATSAPP)")
     print("=" * 70)
     print("Payload JSON:")
     print(json.dumps(payload, indent=2))

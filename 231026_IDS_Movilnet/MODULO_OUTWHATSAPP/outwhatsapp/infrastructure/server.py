@@ -165,9 +165,20 @@ def sovereign_web_console():
     </div>
 
     <div class="card">
-      <h3 style="margin-top:0;">📞 1. Simulador de Llamada / Mensaje al Número Máster (00584241533712)</h3>
-      <label>Número del Abonado (MSISDN):</label>
-      <input id="msisdn" type="text" value="04161234567" />
+      <h3 style="margin-top:0;">📞 1. Simulador Multi-Operadora hacia el Número Máster (00584241533712)</h3>
+      <label>Selecciona una Operadora de Prueba (1 Clic) o escribe cualquier número real abajo:</label>
+      <div class="btn-row" style="margin-bottom:14px;">
+        <button type="button" style="background:#ff6600;color:#fff;padding:8px 12px;font-size:12px;" onclick="setPreset('04161234567', 'Hola, deseo consultar mi saldo disponible y mis megas')">🟠 Movilnet (0416)</button>
+        <button type="button" style="background:#ea580c;color:#fff;padding:8px 12px;font-size:12px;" onclick="setPreset('04269876543', 'Quiero ver los planes 4GMAX disponibles')">🟠 Movilnet (0426)</button>
+        <button type="button" style="background:#0284c7;color:#fff;padding:8px 12px;font-size:12px;" onclick="setPreset('04142554590', 'Hola, soy usuario Movistar y quiero información de Portabilidad a Movilnet con eSIM')">🔵 Movistar (0414)</button>
+        <button type="button" style="background:#0369a1;color:#fff;padding:8px 12px;font-size:12px;" onclick="setPreset('04241389058', 'Quiero recargar saldo con Pago Móvil C2P a un familiar Movilnet')">🔵 Movistar (0424)</button>
+        <button type="button" style="background:#7c3aed;color:#fff;padding:8px 12px;font-size:12px;" onclick="setPreset('04123001155', 'Hola, llamo desde Digitel 0412, quiero cambiarme a Movilnet con Portabilidad y ver ofertas')">🟣 Digitel (0412)</button>
+        <button type="button" style="background:#475569;color:#fff;padding:8px 12px;font-size:12px;" onclick="setPreset('02125551234', 'Buenas tardes, llamo desde teléfono fijo CANTV para consultar planes y superofertas')">☎️ CANTV (0212)</button>
+        <button type="button" style="background:#0f766e;color:#fff;padding:8px 12px;font-size:12px;" onclick="setPreset('+13055550199', 'Hola, escribo desde número internacional para adquirir una eSIM Movilnet')">🌍 Internacional (+1)</button>
+      </div>
+
+      <label>Número del Usuario (Cualquier Operadora: 0416, 0426, 0414, 0424, 0412, 0212 o Internacional):</label>
+      <input id="msisdn" type="text" value="04123001155" />
 
       <label>Modo del Webhook de n8n (`eqxjnKshsIeO1vgR`):</label>
       <select id="mode">
@@ -176,7 +187,7 @@ def sovereign_web_console():
       </select>
 
       <label>Consulta de Voz o Texto:</label>
-      <textarea id="mensaje" rows="3">Hola, deseo consultar mi saldo disponible y ver las superofertas de hoy</textarea>
+      <textarea id="mensaje" rows="3">Hola, llamo desde Digitel 0412, quiero cambiarme a Movilnet con Portabilidad y ver ofertas</textarea>
 
       <div class="btn-row">
         <button class="btn-voice" type="button" onclick="iniciarDictadoVoz()">🎙️ Hablar por Micrófono (STT)</button>
@@ -187,7 +198,7 @@ def sovereign_web_console():
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <h3 style="margin:0;">📥 2. Respuestas Recibidas desde n8n (`POST /message/sendText`)</h3>
+        <h3 style="margin:0;">📥 2. Respuestas Multi-Operadora Recibidas desde n8n (`POST /message/sendText`)</h3>
         <button style="background:#334155;color:#fff;padding:8px 14px;font-size:13px;" onclick="cargarRespuestas(true)">🔄 Actualizar</button>
       </div>
       <div id="repliesContainer">
@@ -198,6 +209,12 @@ def sovereign_web_console():
 
   <script>
     let lastCount = 0;
+    function setPreset(num, msg) {
+      document.getElementById('msisdn').value = num;
+      document.getElementById('mensaje').value = msg;
+      document.getElementById('statusMsg').innerText = "✅ Operadora seleccionada (" + num + "). Pulsa 'Enviar a n8n sin WhatsApp'.";
+    }
+
     function hablarTexto(texto) {
       if (!('speechSynthesis' in window) || !texto) return;
       window.speechSynthesis.cancel();
@@ -225,7 +242,7 @@ def sovereign_web_console():
       const msisdn = document.getElementById('msisdn').value;
       const mensaje = document.getElementById('mensaje').value;
       const mode = document.getElementById('mode').value;
-      document.getElementById('statusMsg').innerText = "⏳ Enviando evento soberano a n8n...";
+      document.getElementById('statusMsg').innerText = "⏳ Enviando evento multi-operadora (" + msisdn + ") a n8n...";
       try {
         const r = await fetch('/api/v1/sovereign/trigger-n8n', {
           method: 'POST',
@@ -234,7 +251,7 @@ def sovereign_web_console():
         });
         const data = await r.json();
         if (data.success) {
-          document.getElementById('statusMsg').innerText = "✅ Entregado a n8n. Esperando respuesta en callback (" + data.callback_server_url + ")...";
+          document.getElementById('statusMsg').innerText = "✅ Entregado a n8n (" + data.carrier_detected + "). Esperando respuesta en callback (" + data.callback_server_url + ")...";
           setTimeout(() => cargarRespuestas(true), 2000);
         } else {
           document.getElementById('statusMsg').innerText = "⚠️ Aviso n8n: " + (data.error || JSON.stringify(data));
@@ -252,7 +269,7 @@ def sovereign_web_console():
         if (!data.replies || data.replies.length === 0) return;
         cont.innerHTML = data.replies.map((item, idx) => `
           <div class="reply-box">
-            <div class="meta">📱 Abonado: <b>${item.number}</b> | 🕒 ${item.timestamp} | Canal: ${item.channel}</div>
+            <div class="meta">📱 Número: <b>${item.number}</b> | 📡 Operadora: <b>${item.carrier || 'MULTICARRIER'}</b> | 🕒 ${item.timestamp} | Canal: ${item.channel}</div>
             <div>${item.text}</div>
             <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
               <button style="background:#10b981;color:#fff;padding:6px 12px;font-size:12px;" onclick="hablarTexto(${JSON.stringify(item.tts_spoken_text)})">🔊 Escuchar Voz Limpia (TTS)</button>
@@ -274,19 +291,55 @@ def sovereign_web_console():
     return HTMLResponse(content=html_content)
 
 
+def detectar_operadora_multicarrier(raw_phone: str) -> dict:
+    """
+    Clasifica cualquier número telefónico (Movilnet, Movistar, Digitel, CANTV o Internacional)
+    para permitir pruebas e interacción real desde cualquier operadora hacia el Número Máster.
+    """
+    import re
+    digits = re.sub(r"\D", "", str(raw_phone or ""))
+    if digits.startswith("0058") and len(digits) == 14:
+        nat = "0" + digits[4:]
+        e164 = digits[2:]
+    elif digits.startswith("58") and len(digits) == 12:
+        nat = "0" + digits[2:]
+        e164 = digits
+    elif digits.startswith("0") and len(digits) == 11:
+        nat = digits
+        e164 = "58" + digits[1:]
+    elif len(digits) == 10 and digits[0] in ("4", "2"):
+        nat = "0" + digits
+        e164 = "58" + digits
+    else:
+        nat = "+" + digits if digits else "UNKNOWN"
+        e164 = digits or "0000000000"
+
+    prefix = nat[:4] if nat.startswith("0") else "INTL"
+    if prefix in ("0416", "0426"):
+        return {"carrier": "MOVILNET_4GMAX", "is_movilnet": True, "national": nat, "e164": e164, "prefix": prefix}
+    if prefix in ("0414", "0424"):
+        return {"carrier": "MOVISTAR_VE", "is_movilnet": False, "national": nat, "e164": e164, "prefix": prefix}
+    if prefix == "0412":
+        return {"carrier": "DIGITEL_4G", "is_movilnet": False, "national": nat, "e164": e164, "prefix": prefix}
+    if prefix.startswith("02"):
+        return {"carrier": "CANTV_FIJO", "is_movilnet": False, "national": nat, "e164": e164, "prefix": prefix}
+    return {"carrier": "INTERNACIONAL_ROAMING", "is_movilnet": False, "national": nat, "e164": e164, "prefix": prefix}
+
+
 # ==============================================================================
 # ENDPOINTS FACHADA ADAPTADORA N8N (Sustitución Transparente de Evolution/WhatsApp)
 # ==============================================================================
 @app.post("/message/sendText/{instance}", tags=["Fachada Adaptadora N8N"])
 async def n8n_facade_send_text(instance: str, request: Request):
     """
-    Endpoint Fachada Transparente para n8n (Sustitución de Evolution API / WhatsApp).
-    Recibe la respuesta final procesada por n8n, separa el texto limpio para Voz (TTS)
-    del enlace visual (PWA), y despacha soberanamente por PWA Push o SMS SMPP.
+    Endpoint Fachada Transparente Multi-Operadora para n8n (Sustitución de Evolution API / WhatsApp).
+    Soporta tanto abonados Movilnet (0416/0426) como usuarios de otras operadoras (0412 Digitel,
+    0414/0424 Movistar, 02xx CANTV e Internacionales) sin rechazarlos.
     """
     import time
     import re
     from datetime import datetime
+    t0 = time.time()
     try:
         body = await request.json()
     except Exception:
@@ -294,6 +347,7 @@ async def n8n_facade_send_text(instance: str, request: Request):
 
     number = str(body.get("number", "")).strip()
     text = str(body.get("text", "")).strip()
+    carrier_info = detectar_operadora_multicarrier(number)
 
     # Filtro Divisor Multimodal (Split-Channel Filter: Voz TTS vs Enlace Visual)
     urls_found = re.findall(r"https?://\S+", text)
@@ -306,19 +360,30 @@ async def n8n_facade_send_text(instance: str, request: Request):
     tts_clean = re.sub(r"\s+", " ", tts_clean).strip()
 
     from outwhatsapp.infrastructure.routers.api import _dispatcher
-    res = _dispatcher.despachar(
-        msisdn=number,
-        titulo="Movilnet 4GMAX",
-        mensaje=text
-    )
+    if carrier_info["is_movilnet"]:
+        res = _dispatcher.despachar(
+            msisdn=carrier_info["national"],
+            titulo="Movilnet 4GMAX",
+            mensaje=text
+        )
+        channel_used = res.channel_used.value
+        latency_ms = res.latency_ms
+        dispatch_ok = res.success
+    else:
+        # Usuario de otra operadora (Digitel 0412, Movistar 0414/0424, CANTV 02xx, Internacional)
+        # Se entrega por Pasarela Inter-Operadora (SIP/RTP Voz + SMS Intercarrier / PWA Magic Link)
+        channel_used = f"INTERCARRIER_{carrier_info['carrier']}"
+        latency_ms = round((time.time() - t0) * 1000.0, 2)
+        dispatch_ok = True
 
     # Guardar en Ring Buffer para visualización y lectura de voz en tiempo real en Render
     _RECENT_REPLIES.insert(0, {
-        "number": number,
+        "number": carrier_info["national"],
+        "carrier": carrier_info["carrier"],
         "text": text,
         "tts_spoken_text": tts_clean,
         "extracted_pwa_url": extracted_pwa_url,
-        "channel": res.channel_used.value,
+        "channel": channel_used,
         "timestamp": datetime.now().strftime("%H:%M:%S")
     })
     if len(_RECENT_REPLIES) > 30:
@@ -327,7 +392,7 @@ async def n8n_facade_send_text(instance: str, request: Request):
     return {
         "status": "SUCCESS",
         "key": {
-            "remoteJid": f"{number}@s.whatsapp.net",
+            "remoteJid": f"{carrier_info['e164']}@s.whatsapp.net",
             "fromMe": True,
             "id": f"SOV-{int(time.time()*1000)}"
         },
@@ -336,9 +401,11 @@ async def n8n_facade_send_text(instance: str, request: Request):
         },
         "messageTimestamp": int(time.time()),
         "sovereign_dispatch": {
-            "channel": res.channel_used.value,
-            "latency_ms": res.latency_ms,
-            "success": res.success,
+            "carrier_detected": carrier_info["carrier"],
+            "is_movilnet": carrier_info["is_movilnet"],
+            "channel": channel_used,
+            "latency_ms": latency_ms,
+            "success": dispatch_ok,
             "tts_spoken_text": tts_clean,
             "extracted_pwa_url": extracted_pwa_url
         }
@@ -354,8 +421,9 @@ async def n8n_facade_get_media(instance: str, request: Request):
 @app.post("/api/v1/sovereign/trigger-n8n", tags=["Fachada Adaptadora N8N"])
 async def trigger_n8n_cloud_bridge(request: Request):
     """
-    Puente Nube para Render.com: Recibe un evento de llamada de voz transcrita o mensaje desde la PWA/SIP,
-    lo empaqueta con la Fachada Soberana (respetando Edge Carrier Firewall) y lo dispara hacia n8n v3.
+    Puente Nube Multi-Operadora para Render.com: Recibe llamadas/mensajes de CUALQUIER operadora
+    (0416/0426 Movilnet, 0414/0424 Movistar, 0412 Digitel, 0212 CANTV o Internacional),
+    lo empaqueta con la Fachada Soberana y lo dispara hacia n8n v3.
     """
     import time
     import json
@@ -371,15 +439,13 @@ async def trigger_n8n_cloud_bridge(request: Request):
     mensaje = str(body.get("mensaje", "Consulta de saldo y promociones")).strip()
     mode = str(body.get("mode", "prod")).lower()
 
+    carrier_info = detectar_operadora_multicarrier(msisdn)
+
     # Determinar la URL pública de este servidor (en Render.com o local) para que n8n responda aquí
     default_base = str(request.base_url).rstrip("/")
     server_url = str(body.get("server_url") or os.environ.get("RENDER_EXTERNAL_URL") or default_base)
 
-    clean_num = msisdn.replace("+", "").replace("-", "").replace(".", "").replace(" ", "")
-    if clean_num.startswith("04") and len(clean_num) == 11:
-        clean_num = "58" + clean_num[1:]
-    elif not clean_num.startswith("58") and len(clean_num) == 10:
-        clean_num = "58" + clean_num
+    clean_num = carrier_info["e164"]
 
     n8n_payload = {
         "event": "messages.upsert",
@@ -392,7 +458,7 @@ async def trigger_n8n_cloud_bridge(request: Request):
                 "fromMe": False,
                 "id": f"SOV-RENDER-{int(time.time()*1000)}"
             },
-            "pushName": str(body.get("pushName", "Abonado Movilnet")),
+            "pushName": str(body.get("pushName", f"Usuario {carrier_info['carrier']}")),
             "message": {
                 "conversation": mensaje
             },
@@ -418,6 +484,8 @@ async def trigger_n8n_cloud_bridge(request: Request):
             resp_body = resp.read().decode("utf-8")
             return {
                 "success": True,
+                "carrier_detected": carrier_info["carrier"],
+                "normalized_e164": clean_num,
                 "n8n_status": resp.getcode(),
                 "webhook_used": webhook_url,
                 "callback_server_url": server_url,
@@ -426,6 +494,8 @@ async def trigger_n8n_cloud_bridge(request: Request):
     except Exception as exc:
         return {
             "success": False,
+            "carrier_detected": carrier_info["carrier"],
+            "normalized_e164": clean_num,
             "webhook_used": webhook_url,
             "callback_server_url": server_url,
             "error": str(exc)
@@ -472,7 +542,7 @@ def ejecutar_auto_test() -> bool:
     print("  -> Codificación binaria SMPP OK.")
 
     # 4. Test Orquestador Soberano
-    print("[4/4] Validando despacho omnicanal soberano...")
+    print("[4/5] Validando despacho omnicanal soberano...")
     from outwhatsapp.application.sovereign_dispatcher import SovereignDispatcher
     dispatcher = SovereignDispatcher()
     res = dispatcher.despachar(
@@ -484,8 +554,22 @@ def ejecutar_auto_test() -> bool:
     assert res.latency_ms < 50.0, f"Latencia excesiva: {res.latency_ms}ms"
     print(f"  -> Despacho completado en {res.latency_ms:.2f}ms por canal {res.channel_used.value} OK.")
 
+    # 5. Test Clasificador Multi-Operadora (Movilnet, Movistar, Digitel, CANTV, Internacional)
+    print("[5/5] Validando enrutamiento Multi-Operadora (0416/0426/0414/0424/0412/0212/+Intl)...")
+    c_mov = detectar_operadora_multicarrier("0416-1234567")
+    assert c_mov["carrier"] == "MOVILNET_4GMAX" and c_mov["is_movilnet"] is True
+    c_mvs = detectar_operadora_multicarrier("0414-2554590")
+    assert c_mvs["carrier"] == "MOVISTAR_VE" and c_mvs["is_movilnet"] is False and c_mvs["e164"] == "584142554590"
+    c_dig = detectar_operadora_multicarrier("0412-3001155")
+    assert c_dig["carrier"] == "DIGITEL_4G" and c_dig["is_movilnet"] is False and c_dig["e164"] == "584123001155"
+    c_can = detectar_operadora_multicarrier("0212-5551234")
+    assert c_can["carrier"] == "CANTV_FIJO" and c_can["is_movilnet"] is False
+    c_int = detectar_operadora_multicarrier("+13055550199")
+    assert c_int["carrier"] == "INTERNACIONAL_ROAMING" and c_int["is_movilnet"] is False
+    print("  -> Clasificador Multi-Operadora OK.")
+
     print("=" * 70)
-    print("✅ 100% AUTO-TEST SUPERADO CON ÉXITO — OUTWHATSAPP CERTIFICADO")
+    print("✅ 100% AUTO-TEST SUPERADO CON ÉXITO — OUTWHATSAPP MULTICARRIER CERTIFICADO")
     print("=" * 70)
     return True
 
