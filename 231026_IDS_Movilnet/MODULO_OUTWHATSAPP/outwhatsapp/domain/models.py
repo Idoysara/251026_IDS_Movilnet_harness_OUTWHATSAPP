@@ -5,7 +5,39 @@ Gobernanza: Universal Best Practices Engineering Rule (Pilares I y III).
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
-from pydantic import BaseModel, Field
+
+try:
+    from pydantic import BaseModel, Field
+except ImportError:
+    class _FieldInfo:
+        def __init__(self, default: Any = ..., default_factory: Any = None, **kwargs: Any) -> None:
+            self.default = default
+            self.default_factory = default_factory
+
+    def Field(default: Any = ..., *, default_factory: Any = None, **kwargs: Any) -> Any:  # type: ignore
+        return _FieldInfo(default=default, default_factory=default_factory, **kwargs)
+
+    class BaseModel:  # type: ignore
+        def __init__(self, **kwargs: Any) -> None:
+            for cls in reversed(self.__class__.__mro__):
+                for k, v in cls.__dict__.items():
+                    if k.startswith("_") or callable(v):
+                        continue
+                    if isinstance(v, _FieldInfo):
+                        if v.default_factory is not None:
+                            setattr(self, k, v.default_factory())
+                        elif v.default is not ...:
+                            setattr(self, k, v.default)
+                    else:
+                        setattr(self, k, v)
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+
+        def dict(self) -> Dict[str, Any]:
+            return dict(self.__dict__)
+
+        def model_dump(self) -> Dict[str, Any]:
+            return dict(self.__dict__)
 
 from .enums import SovereignChannel, DeliveryStatus, PushUrgency
 

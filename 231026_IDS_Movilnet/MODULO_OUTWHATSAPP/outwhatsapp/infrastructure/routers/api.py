@@ -3,8 +3,45 @@ Enrutador RESTful de FastAPI para el Módulo Soberano OUTWHATSAPP (Puerto :8035)
 Gobernanza: Universal Best Practices Engineering Rule (Pilares I y III).
 """
 from typing import Dict, Any, Optional
-from pydantic import BaseModel, Field
-from fastapi import APIRouter, HTTPException, status
+
+try:
+    from pydantic import BaseModel, Field
+except ImportError:
+    from outwhatsapp.domain.models import BaseModel, Field  # type: ignore
+
+try:
+    from fastapi import APIRouter, HTTPException, status
+except ImportError:
+    class _Status:
+        HTTP_200_OK = 200
+        HTTP_201_CREATED = 201
+        HTTP_409_CONFLICT = 409
+        HTTP_422_UNPROCESSABLE_CONTENT = 422
+        HTTP_500_INTERNAL_SERVER_ERROR = 500
+    status = _Status()  # type: ignore
+
+    class HTTPException(Exception):  # type: ignore
+        def __init__(self, status_code: int, detail: str = "") -> None:
+            super().__init__(detail)
+            self.status_code = status_code
+            self.detail = detail
+
+    class _Route:
+        def __init__(self, path: str) -> None:
+            self.path = path
+
+    class APIRouter:  # type: ignore
+        def __init__(self, prefix: str = "", tags: Any = None) -> None:
+            self.prefix = prefix
+            self.routes = []
+
+        def get(self, path: str, **kwargs: Any) -> Any:
+            self.routes.append(_Route(self.prefix + path))
+            return lambda fn: fn
+
+        def post(self, path: str, **kwargs: Any) -> Any:
+            self.routes.append(_Route(self.prefix + path))
+            return lambda fn: fn
 
 try:
     from outwhatsapp.domain.enums import SovereignChannel, DeliveryStatus

@@ -5,12 +5,62 @@ Gobernanza: Universal Best Practices Engineering Rule (Pilares I y II).
 import os
 import sys
 import argparse
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
+from typing import Any
 
-# Asegurar path de importación
-MODULE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
+try:
+    from fastapi import FastAPI, Request, status
+    from fastapi.responses import JSONResponse, HTMLResponse
+    from fastapi.middleware.cors import CORSMiddleware
+except ImportError:
+    class _Status:
+        HTTP_200_OK = 200
+        HTTP_409_CONFLICT = 409
+        HTTP_422_UNPROCESSABLE_CONTENT = 422
+    status = _Status()  # type: ignore
+    Request = Any  # type: ignore
+    CORSMiddleware = object  # type: ignore
+
+    class JSONResponse(dict):  # type: ignore
+        def __init__(self, status_code: int = 200, content: Any = None) -> None:
+            super().__init__(content or {})
+            self.status_code = status_code
+
+    class HTMLResponse(str):  # type: ignore
+        def __new__(cls, content: str = "", status_code: int = 200) -> "HTMLResponse":
+            return super().__new__(cls, content)
+
+    class _Route:
+        def __init__(self, path: str) -> None:
+            self.path = path
+
+    class FastAPI:  # type: ignore
+        def __init__(self, **kwargs: Any) -> None:
+            self.routes = []
+
+        def add_middleware(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+        def exception_handler(self, *args: Any, **kwargs: Any) -> Any:
+            return lambda fn: fn
+
+        def include_router(self, router: Any) -> None:
+            for r in getattr(router, "routes", []):
+                self.routes.append(r)
+
+        def get(self, path: str, **kwargs: Any) -> Any:
+            self.routes.append(_Route(path))
+            return lambda fn: fn
+
+        def head(self, path: str, **kwargs: Any) -> Any:
+            self.routes.append(_Route(path))
+            return lambda fn: fn
+
+        def post(self, path: str, **kwargs: Any) -> Any:
+            self.routes.append(_Route(path))
+            return lambda fn: fn
+
+# Asegurar path de importación (raíz de MODULO_OUTWHATSAPP)
+MODULE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 if MODULE_ROOT not in sys.path:
     sys.path.insert(0, MODULE_ROOT)
 
@@ -72,10 +122,14 @@ def get_recent_replies():
     return {"success": True, "count": len(_RECENT_REPLIES), "replies": _RECENT_REPLIES}
 
 
+@app.head("/", include_in_schema=False)
+def head_root():
+    return JSONResponse(status_code=200, content={"status": "ONLINE"})
+
+
 @app.get("/", tags=["Consola Soberana"])
 def sovereign_web_console():
     """Consola Interactiva de Voz y Texto para pruebas en Render.com sin WhatsApp."""
-    from fastapi.responses import HTMLResponse
     html_content = """<!DOCTYPE html>
 <html lang="es">
 <head>
