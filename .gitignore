@@ -1,0 +1,36 @@
+# === Zero-PII / Secretos (repositorio PÚBLICO) ===
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+**/06_SECRETS_BACKUP/
+**/03_N8N_WORKFLOWS_AND_CREDS/
+
+# Bases de datos con datos de suscriptores / estado local
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Archivos comprimidos pesados y logs
+*.zip
+*.tar.gz
+*.log
+
+# Respaldo anidado previo (repo independiente) y duplicados históricos
+231026_IDS_Movilnet/I231026_IDS_Movilnet_Harness2/
+**/_ARCHIVO_DUPLICADOS_181026/
+
+# Entornos y cachés
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.cache/
+node_modules/
+.DS_Store
+**/backup_staging/
