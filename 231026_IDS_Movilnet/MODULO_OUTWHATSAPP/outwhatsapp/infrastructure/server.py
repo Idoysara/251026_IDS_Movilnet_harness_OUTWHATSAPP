@@ -555,6 +555,7 @@ async def trigger_n8n_cloud_bridge(request: Request):
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             resp_body = resp.read().decode("utf-8")
+            latest = _RECENT_REPLIES[0] if _RECENT_REPLIES else generar_respuesta_soberana_local(carrier_info, mensaje)
             return {
                 "success": True,
                 "engine_used": "N8N_CLOUD_V3",
@@ -563,7 +564,11 @@ async def trigger_n8n_cloud_bridge(request: Request):
                 "n8n_status": resp.getcode(),
                 "webhook_used": webhook_url,
                 "callback_server_url": server_url,
-                "n8n_response": resp_body
+                "n8n_response": resp_body,
+                "texto_sms": latest["text"],
+                "texto_voz": latest["tts_spoken_text"],
+                "pwa_url": latest["extracted_pwa_url"],
+                "reply": latest
             }
     except Exception as exc:
         # Failover Cognitivo Autónomo cuando el workflow de n8n está en 'Inactive' (HTTP 404)
@@ -576,6 +581,9 @@ async def trigger_n8n_cloud_bridge(request: Request):
             "webhook_used": webhook_url,
             "callback_server_url": server_url,
             "n8n_notice": str(exc),
+            "texto_sms": fallback_entry["text"],
+            "texto_voz": fallback_entry["tts_spoken_text"],
+            "pwa_url": fallback_entry["extracted_pwa_url"],
             "reply": fallback_entry
         }
 

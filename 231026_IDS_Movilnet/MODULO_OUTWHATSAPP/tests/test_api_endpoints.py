@@ -99,3 +99,33 @@ def test_invalid_msisdn_returns_422(client):
     data = resp.json()
     assert "detail" in data
     assert "no pertenece a Movilnet" in data["detail"]
+
+
+def test_n8n_facade_send_text_endpoint(client):
+    """Verifica que N8N pueda entregar su respuesta a OUTWHATSAPP sin usar WhatsApp."""
+    payload = {
+        "number": "584161234567",
+        "text": "Estimado abonado, su saldo actual es de 250.00 VES. Recargue en https://pwa.movilnet.com.ve",
+        "linkPreview": False,
+        "options": {
+            "delay": 1200,
+            "presence": "composing"
+        }
+    }
+    resp = client.post("/message/sendText/Viki_LPGTEC", json=payload)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "SUCCESS"
+    assert "key" in data
+    assert "584161234567" in data["key"]["remoteJid"]
+    assert "sovereign_dispatch" in data
+    assert data["sovereign_dispatch"]["success"] is True
+
+
+def test_n8n_facade_get_media_endpoint(client):
+    """Verifica el endpoint de captura de media para N8N."""
+    resp = client.post("/chat/getBase64FromMediaMessage/Viki_LPGTEC", json={})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "base64" in data
+
